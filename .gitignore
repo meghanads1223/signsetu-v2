@@ -1,0 +1,19 @@
+# Python
+backend/.venv/
+__pycache__/
+*.pyc
+
+# Node
+frontend/node_modules/
+
+# Data and models (too large for GitHub)
+data/
+*.pt
+*.mp4
+*.mov
+*.zip
+
+# Environment and editor
+.env
+.vscode/
+*.db
