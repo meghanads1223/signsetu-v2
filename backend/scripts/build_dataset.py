@@ -1,14 +1,16 @@
 """
 Build the training dataset from the extracted landmarks.
 
-Output (data/dataset/):
-  dataset.npz   X (videos, 30, 130), y (labels as numbers),
-                split_random, split_session (0 = train, 1 = val, 2 = test)
-  labels.json   sign names in label order
+Usage (from the project root, venv active):
+  python backend/scripts/build_dataset.py --features body    # hands + body reference
+  python backend/scripts/build_dataset.py --features hands   # hands only (first version)
 
-Run from the project root (venv active):
-  python backend\\scripts\\build_dataset.py
+Output:
+  data/dataset_body/  (or data/dataset/ for hands)
+    dataset.npz   X (videos, 30, features), y, split_random, split_session (0 train, 1 val, 2 test)
+    labels.json   sign names in label order
 """
+import argparse
 import csv
 import json
 import re
@@ -20,10 +22,15 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "backend"))
 
-from app.preprocessing import FEATURE_DIM, SEQ_LEN, process_sequence  # noqa: E402
+from app.preprocessing import (  # noqa: E402
+    FEATURE_DIM_BODY,
+    FEATURE_DIM_HANDS,
+    SEQ_LEN,
+    process_sequence,
+)
 
 LANDMARKS = ROOT / "data" / "landmarks"
-OUT_DIR = ROOT / "data" / "dataset"
+POSE_DIR = ROOT / "data" / "pose"
 KEPT = ("saved", "cached", "low_hands")
 SEED = 42
 
@@ -72,6 +79,13 @@ def session_split(groups, rng):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--features", choices=["hands", "body"], default="body")
+    args = parser.parse_args()
+    use_body = args.features == "body"
+    feature_dim = FEATURE_DIM_BODY if use_body else FEATURE_DIM_HANDS
+    out_dir = ROOT / "data" / ("dataset_body" if use_body else "dataset")
+
     manifest = LANDMARKS / "manifest.csv"
     if not manifest.exists():
         sys.exit("manifest.csv not found. Run extract_landmarks.py first.")
@@ -96,7 +110,8 @@ def main():
         for r in by_label[label]:
             stem = Path(r["source"]).stem
             raw = np.load(LANDMARKS / r["slug"] / f"{stem}.npy")
-            feat = process_sequence(raw)
+            pose = np.load(POSE_DIR / r["slug"] / f"{stem}.npy") if use_body else None
+            feat = process_sequence(raw, pose)
             if feat is None:
                 skipped.append(f"{label} / {stem}")
                 continue
@@ -123,12 +138,12 @@ def main():
 
     X = np.stack(X).astype(np.float32)
     y = np.array(y, dtype=np.int64)
-    assert X.shape[1:] == (SEQ_LEN, FEATURE_DIM), X.shape
+    assert X.shape[1:] == (SEQ_LEN, feature_dim), X.shape
     assert not np.isnan(X).any(), "NaN found in features"
 
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    out_dir.mkdir(parents=True, exist_ok=True)
     np.savez_compressed(
-        OUT_DIR / "dataset.npz",
+        out_dir / "dataset.npz",
         X=X,
         y=y,
         groups=np.array(groups_all),
@@ -136,21 +151,19 @@ def main():
         split_random=np.array(split_random, dtype=np.int8),
         split_session=np.array(split_session, dtype=np.int8),
     )
-    with open(OUT_DIR / "labels.json", "w", encoding="utf-8") as f:
+    with open(out_dir / "labels.json", "w", encoding="utf-8") as f:
         json.dump(labels, f, indent=2)
 
-    print("--- Dataset summary ---")
+    print(f"--- Dataset summary ({args.features} features) ---")
     print(f"Signs: {len(labels)}   Videos used: {len(X)}   Shape: {X.shape}")
     for name, arr in (("random ", split_random), ("session", split_session)):
         arr = np.array(arr)
         print(f"{name} split -> train {(arr == 0).sum()}, val {(arr == 1).sum()}, test {(arr == 2).sum()}")
     if skipped:
         print(f"Skipped (too few hand frames): {len(skipped)}")
-        for s in skipped:
-            print(f"  {s}")
     if few_sessions:
         print("Signs with fewer than 3 sessions (used random split for them):", few_sessions)
-    print(f"Saved to {OUT_DIR}")
+    print(f"Saved to {out_dir}")
 
 
 if __name__ == "__main__":

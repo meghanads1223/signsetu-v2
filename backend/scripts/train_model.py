@@ -2,15 +2,16 @@
 Train the Bidirectional LSTM sign classifier.
 
 Usage (from the project root, venv active):
-  python backend\\scripts\\train_model.py --split random
-  python backend\\scripts\\train_model.py --split session
+  python backend/scripts/train_model.py --split random --features body
+  python backend/scripts/train_model.py --split session --features body
+  (--features hands reproduces the first, hands-only version)
 
-Outputs:
-  backend/models/signsetu_bilstm_<split>.pt
-  docs/results/training_curves_<split>.png
-  docs/results/confusion_matrix_<split>.png
-  docs/results/classification_report_<split>.txt
-  docs/results/metrics_<split>.json
+Outputs (tag = split, or split_body for body features):
+  backend/models/signsetu_bilstm_<tag>.pt
+  docs/results/training_curves_<tag>.png
+  docs/results/confusion_matrix_<tag>.png
+  docs/results/classification_report_<tag>.txt
+  docs/results/metrics_<tag>.json
 """
 import argparse
 import copy
@@ -30,8 +31,11 @@ from sklearn.metrics import classification_report, confusion_matrix, f1_score
 from torch.utils.data import DataLoader, Dataset
 
 ROOT = Path(__file__).resolve().parents[2]
-DATASET = ROOT / "data" / "dataset" / "dataset.npz"
-LABELS = ROOT / "data" / "dataset" / "labels.json"
+DATASETS = {
+    "hands": ROOT / "data" / "dataset",
+    "body": ROOT / "data" / "dataset_body",
+}
+POS_SHIFT = {"hands": 0.03, "body": 0.08}   # size of the random position shift used in augmentation
 MODEL_DIR = ROOT / "backend" / "models"
 RESULTS_DIR = ROOT / "docs" / "results"
 
@@ -60,10 +64,11 @@ def time_warp(x, rng):
 
 
 class SignDataset(Dataset):
-    def __init__(self, X, y, augment, seed=0):
+    def __init__(self, X, y, augment, pos_shift=0.03, seed=0):
         self.X = X
         self.y = y
         self.augment = augment
+        self.pos_shift = pos_shift
         self.rng = np.random.default_rng(seed)
 
     def __len__(self):
@@ -73,16 +78,18 @@ class SignDataset(Dataset):
         x = self.X[i].astype(np.float32).copy()
         if self.augment:
             x = time_warp(x, self.rng)
-            t = len(x)
-            blocks = x.reshape(t, 2, 65)                       # per hand: 63 shape + 2 position
-            present = (np.abs(blocks).sum(axis=-1, keepdims=True) > 0)
-            blocks[..., :63] *= self.rng.uniform(0.9, 1.1)     # slight hand-size change
+            t, d = x.shape
+            per_hand = d // 2                                   # 65 (hands) or 67 (body)
+            blocks = x.reshape(t, 2, per_hand)                  # first 63 = hand shape, rest = position
+            present = np.abs(blocks).sum(axis=-1, keepdims=True) > 0
+            blocks[..., :63] *= self.rng.uniform(0.9, 1.1)      # slight hand-size change
             noise = self.rng.normal(0, 0.02, blocks.shape)
             noise[..., 63:] = 0
             blocks = blocks + noise * present
-            offset = self.rng.normal(0, 0.03, (1, 2, 2))       # shift hand position a little
-            blocks[..., 63:] += offset * present
-            x = blocks.reshape(t, 130).astype(np.float32)
+            k = (per_hand - 63) // 2                            # number of (x, y) position pairs
+            shift = self.rng.normal(0, self.pos_shift, (1, 2, 2))
+            blocks[..., 63:] += np.tile(shift, (1, 1, k)) * present
+            x = blocks.reshape(t, d).astype(np.float32)
         return torch.from_numpy(x), torch.tensor(int(self.y[i]), dtype=torch.long)
 
 
@@ -146,7 +153,6 @@ def plot_curves(history, best_epoch, path, title):
 
 
 def plot_confusion(cm, labels, path, title):
-    n = len(labels)
     annot = np.where(cm > 0, cm.astype(str), "")
     fig, ax = plt.subplots(figsize=(14, 12))
     sns.heatmap(cm, annot=annot, fmt="", cmap="Purples", cbar=False,
@@ -165,27 +171,32 @@ def plot_confusion(cm, labels, path, title):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--split", choices=["random", "session"], default="random")
+    parser.add_argument("--features", choices=["hands", "body"], default="hands")
     args = parser.parse_args()
 
     torch.manual_seed(SEED)
     np.random.seed(SEED)
 
-    data = np.load(DATASET)
+    data_dir = DATASETS[args.features]
+    data = np.load(data_dir / "dataset.npz")
     X, y = data["X"], data["y"]
     split = data["split_random" if args.split == "random" else "split_session"]
-    with open(LABELS, encoding="utf-8") as f:
+    with open(data_dir / "labels.json", encoding="utf-8") as f:
         labels = json.load(f)
     n_classes = len(labels)
+    tag = args.split if args.features == "hands" else f"{args.split}_body"
 
     tr, va, te = split == 0, split == 1, split == 2
-    print(f"Split: {args.split} | train {tr.sum()}, val {va.sum()}, test {te.sum()} | {n_classes} signs")
+    print(f"Features: {args.features} | Split: {args.split} | train {tr.sum()}, val {va.sum()}, "
+          f"test {te.sum()} | {n_classes} signs | input size {X.shape[2]}")
     missing = sorted(set(range(n_classes)) - set(y[tr].tolist()))
     if missing:
         print("WARNING: signs with no training videos:", [labels[i] for i in missing])
 
-    train_loader = DataLoader(SignDataset(X[tr], y[tr], augment=True, seed=SEED), batch_size=BATCH, shuffle=True)
-    val_loader = DataLoader(SignDataset(X[va], y[va], augment=False), batch_size=BATCH)
-    test_loader = DataLoader(SignDataset(X[te], y[te], augment=False), batch_size=BATCH)
+    shift = POS_SHIFT[args.features]
+    train_loader = DataLoader(SignDataset(X[tr], y[tr], True, shift, SEED), batch_size=BATCH, shuffle=True)
+    val_loader = DataLoader(SignDataset(X[va], y[va], False), batch_size=BATCH)
+    test_loader = DataLoader(SignDataset(X[te], y[te], False), batch_size=BATCH)
 
     model = BiLSTMClassifier(X.shape[2], HIDDEN, LAYERS, n_classes, DROPOUT)
     print(f"Model parameters: {sum(p.numel() for p in model.parameters()):,}")
@@ -232,12 +243,11 @@ def main():
 
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     MODEL_DIR.mkdir(parents=True, exist_ok=True)
-    tag = args.split
 
     plot_curves(history, best["epoch"], RESULTS_DIR / f"training_curves_{tag}.png",
-                f"Training curves ({tag} split)")
+                f"Training curves ({args.split} split, {args.features} features)")
     plot_confusion(cm, labels, RESULTS_DIR / f"confusion_matrix_{tag}.png",
-                   f"Confusion matrix ({tag} split, test set)")
+                   f"Confusion matrix ({args.split} split, {args.features} features, test set)")
 
     report = classification_report(trues, preds, labels=list(range(n_classes)),
                                    target_names=labels, zero_division=0)
@@ -252,7 +262,8 @@ def main():
     )[:8]
 
     metrics = {
-        "split": tag,
+        "split": args.split,
+        "features": args.features,
         "train_videos": int(tr.sum()), "val_videos": int(va.sum()), "test_videos": int(te.sum()),
         "best_epoch": best["epoch"] + 1,
         "val_accuracy": round(best["acc"], 4),
@@ -267,13 +278,13 @@ def main():
             "state_dict": model.state_dict(),
             "labels": labels,
             "config": {"input_dim": int(X.shape[2]), "hidden": HIDDEN, "layers": LAYERS,
-                       "dropout": DROPOUT, "seq_len": int(X.shape[1])},
+                       "dropout": DROPOUT, "seq_len": int(X.shape[1]), "features": args.features},
         },
         MODEL_DIR / f"signsetu_bilstm_{tag}.pt",
     )
 
     print("\n--- Result ---")
-    print(f"Split: {tag}")
+    print(f"Features: {args.features} | Split: {args.split}")
     print(f"Best validation accuracy: {best['acc']:.1%} (epoch {best['epoch'] + 1})")
     print(f"TEST accuracy: {test_acc:.1%}   macro F1: {macro_f1:.3f}")
     print("Most confused pairs (count, actual -> predicted):")
@@ -285,3 +296,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
