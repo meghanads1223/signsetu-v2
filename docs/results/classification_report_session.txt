@@ -1,0 +1,38 @@
+                precision    recall  f1-score   support
+
+       Alright       0.50      0.86      0.63         7
+        Friday       0.00      0.00      0.00         4
+  Good Morning       0.00      0.00      0.00         7
+Good afternoon       1.00      0.62      0.77         8
+  Good evening       0.44      1.00      0.62         4
+    Good night       0.00      0.00      0.00         3
+         Hello       0.43      1.00      0.60         3
+          Hour       0.50      1.00      0.67         4
+   How are you       0.75      1.00      0.86         3
+             I       1.00      0.50      0.67         4
+        Minute       0.00      0.00      0.00         3
+        Monday       0.40      0.50      0.44         4
+         Month       0.00      0.00      0.00         3
+       Pleased       0.75      1.00      0.86         3
+      Saturday       1.00      0.33      0.50         3
+        Sunday       0.00      0.00      0.00         3
+     Thank you       1.00      0.43      0.60         7
+      Thursday       0.00      0.00      0.00         4
+         Today       0.00      0.00      0.00         4
+      Tomorrow       0.00      0.00      0.00         4
+       Tuesday       0.33      0.50      0.40         2
+     Wednesday       0.20      0.25      0.22         4
+          Week       0.00      0.00      0.00         3
+          Year       0.00      0.00      0.00         4
+     Yesterday       0.75      0.75      0.75         4
+            he       1.00      0.25      0.40         4
+            it       0.50      0.75      0.60         4
+           she       0.50      1.00      0.67         4
+          they       0.40      0.67      0.50         3
+            we       0.14      0.33      0.20         3
+           you       0.40      1.00      0.57         4
+  you (plural)       0.00      0.00      0.00         3
+
+      accuracy                           0.44       127
+     macro avg       0.37      0.43      0.36       127
+  weighted avg       0.41      0.44      0.38       127

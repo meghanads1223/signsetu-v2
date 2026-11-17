@@ -1,0 +1,52 @@
+{
+  "split": "session",
+  "train_videos": 323,
+  "val_videos": 111,
+  "test_videos": 127,
+  "best_epoch": 48,
+  "val_accuracy": 0.4775,
+  "test_accuracy": 0.4409,
+  "test_macro_f1": 0.36,
+  "top_confusions": [
+    {
+      "count": 4,
+      "actual": "Today",
+      "predicted": "Hour"
+    },
+    {
+      "count": 4,
+      "actual": "Thank you",
+      "predicted": "Alright"
+    },
+    {
+      "count": 4,
+      "actual": "Good Morning",
+      "predicted": "Good evening"
+    },
+    {
+      "count": 4,
+      "actual": "Friday",
+      "predicted": "Sunday"
+    },
+    {
+      "count": 3,
+      "actual": "he",
+      "predicted": "she"
+    },
+    {
+      "count": 3,
+      "actual": "Year",
+      "predicted": "we"
+    },
+    {
+      "count": 3,
+      "actual": "Minute",
+      "predicted": "it"
+    },
+    {
+      "count": 3,
+      "actual": "Good night",
+      "predicted": "Monday"
+    }
+  ]
+}

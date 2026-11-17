@@ -1,0 +1,38 @@
+                precision    recall  f1-score   support
+
+       Alright       0.75      1.00      0.86         3
+        Friday       1.00      1.00      1.00         2
+  Good Morning       1.00      0.67      0.80         3
+Good afternoon       1.00      1.00      1.00         3
+  Good evening       1.00      1.00      1.00         3
+    Good night       0.50      0.67      0.57         3
+         Hello       1.00      1.00      1.00         3
+          Hour       0.67      1.00      0.80         2
+   How are you       1.00      1.00      1.00         3
+             I       1.00      1.00      1.00         3
+        Minute       1.00      0.50      0.67         2
+        Monday       0.67      1.00      0.80         2
+         Month       1.00      1.00      1.00         2
+       Pleased       0.60      1.00      0.75         3
+      Saturday       0.67      1.00      0.80         2
+        Sunday       1.00      0.50      0.67         2
+     Thank you       1.00      1.00      1.00         3
+      Thursday       1.00      0.50      0.67         2
+         Today       0.00      0.00      0.00         2
+      Tomorrow       0.00      0.00      0.00         2
+       Tuesday       1.00      1.00      1.00         2
+     Wednesday       1.00      1.00      1.00         2
+          Week       1.00      1.00      1.00         2
+          Year       1.00      1.00      1.00         2
+     Yesterday       0.67      1.00      0.80         2
+            he       1.00      0.67      0.80         3
+            it       0.75      1.00      0.86         3
+           she       1.00      1.00      1.00         3
+          they       1.00      1.00      1.00         3
+            we       1.00      1.00      1.00         3
+           you       1.00      0.67      0.80         3
+  you (plural)       1.00      1.00      1.00         3
+
+      accuracy                           0.86        81
+     macro avg       0.85      0.85      0.83        81
+  weighted avg       0.87      0.86      0.85        81

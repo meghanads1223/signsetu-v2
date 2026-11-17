@@ -1,0 +1,52 @@
+{
+  "split": "random",
+  "train_videos": 399,
+  "val_videos": 81,
+  "test_videos": 81,
+  "best_epoch": 53,
+  "val_accuracy": 0.8765,
+  "test_accuracy": 0.8642,
+  "test_macro_f1": 0.8324,
+  "top_confusions": [
+    {
+      "count": 1,
+      "actual": "you",
+      "predicted": "Saturday"
+    },
+    {
+      "count": 1,
+      "actual": "he",
+      "predicted": "Good night"
+    },
+    {
+      "count": 1,
+      "actual": "Tomorrow",
+      "predicted": "it"
+    },
+    {
+      "count": 1,
+      "actual": "Tomorrow",
+      "predicted": "Alright"
+    },
+    {
+      "count": 1,
+      "actual": "Today",
+      "predicted": "Tomorrow"
+    },
+    {
+      "count": 1,
+      "actual": "Today",
+      "predicted": "Hour"
+    },
+    {
+      "count": 1,
+      "actual": "Thursday",
+      "predicted": "Yesterday"
+    },
+    {
+      "count": 1,
+      "actual": "Sunday",
+      "predicted": "Pleased"
+    }
+  ]
+}
