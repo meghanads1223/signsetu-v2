@@ -125,3 +125,59 @@ body {
   opacity: 0.6;
   cursor: not-allowed;
 }
+.btn-record {
+  background: #4a3ab5;
+  color: #ffffff;
+}
+.btn-recording {
+  background: #d92d20;
+  color: #ffffff;
+  animation: pulse 1s infinite;
+}
+@keyframes pulse {
+  50% { opacity: 0.7; }
+}
+
+.rec-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: rgba(217, 45, 32, 0.9);
+  color: #ffffff;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.live-toggle {
+  display: block;
+  margin-top: 12px;
+  font-size: 0.9rem;
+  color: #5b6086;
+}
+
+.result-card {
+  margin-top: 14px;
+  padding: 14px 18px;
+  border-radius: 12px;
+  background: #f1efff;
+}
+.result-main {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #4a3ab5;
+}
+.result-main span {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #5b6086;
+}
+.result-top3 {
+  margin-top: 6px;
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 0.9rem;
+  color: #5b6086;
+}
